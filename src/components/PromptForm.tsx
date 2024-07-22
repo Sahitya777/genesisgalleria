@@ -1,4 +1,4 @@
-import { useDynamicContext, useIsLoggedIn } from "@dynamic-labs/sdk-react-core";
+
 import { useAccount } from "@starknet-react/core";
 import axios from "axios";
 import { Lightbulb, Loader } from "lucide-react";
@@ -6,9 +6,6 @@ import { Recursive } from "next/font/google";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-
-import { getAllGenesis, getGenesis } from "../blockchain/scripts/history";
-import useMintNft from "../blockchain/scripts/mintnft";
 import {
   Dialog,
   DialogContent,
@@ -20,6 +17,8 @@ import { getRandomPrompt } from "../utils/index";
 import { Button } from "./ui/button";
 
 const font = Recursive({ subsets: ["latin"] });
+import { useWriteContract } from 'wagmi'
+import genesisAbi from '../blockchain/abis/genesis.json'
 
 export default function PromptForm({}: any) {
   const [prompt, setPrompt] = useState("");
@@ -29,31 +28,18 @@ export default function PromptForm({}: any) {
   const [isMinting, setIsMinting] = useState(false);
   const [generatedImageUrl, setGeneratedImageUrl] = useState(
     ""
-    // "https://shorturl.at/Dvlqm"
-    // "https://oaidalleapiprodscus.blob.core.windows.net/private/org-CF0C6y3lv4lQ8ilB5bQ9SAna/user-C41QIYbDmRAXSSXjMq9xyjUJ/img-qqwIlXOGlShZxcNIYu5Xre4q.png?st=2024-06-23T08%3A24%3A35Z&se=2024-06-23T10%3A24%3A35Z&sp=r&sv=2023-11-03&sr=b&rscd=inline&rsct=image/png&skoid=6aaadede-4fb3-4698-a8f6-684d7786b067&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2024-06-22T13%3A51%3A55Z&ske=2024-06-23T13%3A51%3A55Z&sks=b&skv=2023-11-03&sig=RClvaHxS8DuAmQFCGOKQL5fGsuF%2BmH0Agh3oo3eEnfQ%3D"
-    // "https://oaidalleapiprodscus.blob.core.windows.net/private/org-CF0C6y3lv4lQ8ilB5bQ9SAna/user-C41QIYbDmRAXSSXjMq9xyjUJ/img-tJPa6t6Cbp4N5cADLqbYeGI3.png?st=2024-06-23T02%3A55%3A38Z&se=2024-06-23T04%3A55%3A38Z&sp=r&sv=2023-11-03&sr=b&rscd=inline&rsct=image/png&skoid=6aaadede-4fb3-4698-a8f6-684d7786b067&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2024-06-22T14%3A08%3A33Z&ske=2024-06-23T14%3A08%3A33Z&sks=b&skv=2023-11-03&sig=3dxSdAs6Ow1YjDQkf2YSZfSuDYwJRHNmSTPD5esnoEM%3D"
   );
-  const {
-    uri,
-    seturi,
-    dataMint,
-    errorMint,
-    resetMint,
-    writeAsyncMint,
-    writeMint,
-    isErrorMint,
-    isIdleMint,
-    isSuccessMint,
-    statusMint,
-  } = useMintNft();
-  const { primaryWallet } = useDynamicContext();
-  const { status } = useAccount();
+  console.log(generatedImageUrl,"url")
+  const [uri, seturi] = useState("")
+  
+  
+  const { writeContract,writeContractAsync } = useWriteContract()
 
   const JWT = process.env.NEXT_PUBLIC_PINATA_JWT!;
 
   const handleMint = async () => {
     try {
-      const data = await getGenesis();
+      // const data = await getGenesis();
     } catch (err) {
       console.log(err, "err in trnasaction");
     }
@@ -62,8 +48,8 @@ export default function PromptForm({}: any) {
   const handleSubmit = async (e: any) => {
     e.preventDefault();
 
-    if (status !== "connected")
-      return toast.error("Please connect your wallet first");
+    // if (status !== "connected")
+    //   return toast.error("Please connect your wallet first");
 
     if (!prompt)
       return toast.error("Please enter a prompt or get surprised : )");
@@ -73,7 +59,6 @@ export default function PromptForm({}: any) {
 
     try {
       const response = await axios.post("/api/openai", { prompt });
-
       if (response?.status === 200) {
         setGeneratedImageUrl(response?.data?.imageData[0]?.url);
         setIsGenerating(false);
@@ -125,7 +110,7 @@ export default function PromptForm({}: any) {
       if (uploadRes?.IpfsHash) {
         setIpfsHash(uploadRes?.IpfsHash);
         seturi(uploadRes?.IpfsHash);
-        handleMint();
+        // handleMint();
       }
       setIsMinting(false);
     } catch (error) {
@@ -133,13 +118,8 @@ export default function PromptForm({}: any) {
       setIsMinting(false);
     }
   };
+  console.log(ipfsHash,uri,"hash")
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const res = await getAllGenesis();
-    };
-    fetchData();
-  }, []);
 
   return (
     <form onSubmit={handleSubmit} className="animate-in fade-in duration-700">
@@ -191,7 +171,7 @@ export default function PromptForm({}: any) {
                           variant="ghost"
                           onClick={() => {
                             // setIsModalOpen(false)
-                            handleMint();
+                            // handleMint();
                           }}
                           className={cn("w-full", {
                             "opacity-50 cursor-not-allowed": isMinting,
@@ -203,6 +183,14 @@ export default function PromptForm({}: any) {
                         <Button
                           onClick={async () => {
                             generatedImageUrl && uploadByURL(generatedImageUrl);
+                            await writeContractAsync({ 
+                              abi:genesisAbi,
+                              address: '0x32de4FB7A0a736a8a319EF5f93B97B098b14202F',
+                              functionName: 'mint',
+                              args: [
+                                uri
+                              ],
+                           })
                           }}
                           className={cn(
                             "w-full bg-gradient-to-tr from-[#e79de7] to-[#f28df2] text-black hover:to-[#ee77ee]",

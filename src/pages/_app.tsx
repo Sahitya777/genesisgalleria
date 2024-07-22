@@ -1,7 +1,5 @@
 import "@/styles/globals.css";
-import { DynamicContextProvider } from "@dynamic-labs/sdk-react-core";
-import { StarknetWalletConnectors } from "@dynamic-labs/starknet";
-import { sepolia } from "@starknet-react/chains";
+
 import {
   StarknetConfig,
   alchemyProvider,
@@ -15,6 +13,10 @@ import {
 import type { AppProps } from "next/app";
 
 import { Toaster } from "@/components/ui/sonner";
+import { createConfig,http, WagmiProvider } from "wagmi";
+import { mainnet,sepolia } from "wagmi/chains";
+
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 export default function App({ Component, pageProps }: AppProps) {
   const cssOverrides = `
@@ -24,6 +26,8 @@ export default function App({ Component, pageProps }: AppProps) {
     }
 `;
 
+const queryClient = new QueryClient();
+
   const provider = publicProvider();
   const { connectors } = useInjectedConnectors({
     recommended: [argent(), braavos()],
@@ -31,23 +35,20 @@ export default function App({ Component, pageProps }: AppProps) {
     order: "random",
   });
 
+  const config = createConfig({
+    chains: [sepolia],
+    transports: {
+      [sepolia.id]: http(),
+    },
+  })
+
+
   return (
-    <DynamicContextProvider
-      settings={{
-        environmentId: process.env.NEXT_PUBLIC_ENVIRONMENT_ID!,
-        walletConnectors: [StarknetWalletConnectors],
-        cssOverrides: cssOverrides,
-        enableConnectOnlyFallback: true,
-      }}
-    >
-      <StarknetConfig
-        chains={[sepolia]}
-        provider={provider}
-        connectors={connectors}
-      >
+    <WagmiProvider config={config}>
+      <QueryClientProvider client={queryClient}>
         <Component {...pageProps} />
         <Toaster />
-      </StarknetConfig>
-    </DynamicContextProvider>
+      </QueryClientProvider>
+    </WagmiProvider>
   );
 }
