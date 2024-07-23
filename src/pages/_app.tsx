@@ -32,7 +32,7 @@ export default function App({ Component, pageProps }: AppProps) {
   const config = getDefaultConfig({
     appName: "Genesis Galleria",
     projectId: "MY_PROJECT_ID",
-    chains: [mainnet, polygon, sepolia],
+    chains: [polygon, sepolia],
     ssr: true, // If your dApp uses server side rendering (SSR)
   });
 
