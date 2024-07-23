@@ -1,19 +1,9 @@
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 
-  import { useAccount, useConnect, useDisconnect } from "@starknet-react/core";
-  
-  import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-  } from "@/components/ui/dropdown-menu";
-  import Image from "next/image";
-  
-  export default function Header() {
-  
-    return (
-      <div>
-
-      </div>
-    );
-  }
+export default function Header() {
+  return (
+    <div className="w-full flex justify-end p-2">
+      <ConnectButton chainStatus="icon" />
+    </div>
+  );
+}

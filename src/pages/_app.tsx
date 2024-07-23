@@ -1,22 +1,25 @@
 import "@/styles/globals.css";
 
+import { getDefaultConfig, RainbowKitProvider } from "@rainbow-me/rainbowkit";
+import "@rainbow-me/rainbowkit/styles.css";
 import {
-  StarknetConfig,
   alchemyProvider,
   argent,
   braavos,
   infuraProvider,
   publicProvider,
+  StarknetConfig,
   useInjectedConnectors,
   useProvider,
 } from "@starknet-react/core";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { AppProps } from "next/app";
+import { WagmiProvider } from "wagmi";
+import { arbitrum, base, mainnet, optimism, polygon } from "wagmi/chains";
 
 import { Toaster } from "@/components/ui/sonner";
-import { createConfig,http, WagmiProvider } from "wagmi";
-import { mainnet,sepolia } from "wagmi/chains";
-
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { createConfig, http } from "wagmi";
+import { sepolia } from "wagmi/chains";
 
 export default function App({ Component, pageProps }: AppProps) {
   const cssOverrides = `
@@ -26,7 +29,14 @@ export default function App({ Component, pageProps }: AppProps) {
     }
 `;
 
-const queryClient = new QueryClient();
+  const config = getDefaultConfig({
+    appName: "Genesis Galleria",
+    projectId: "MY_PROJECT_ID",
+    chains: [mainnet, polygon, sepolia],
+    ssr: true, // If your dApp uses server side rendering (SSR)
+  });
+
+  const queryClient = new QueryClient();
 
   const provider = publicProvider();
   const { connectors } = useInjectedConnectors({
@@ -35,18 +45,19 @@ const queryClient = new QueryClient();
     order: "random",
   });
 
-  const config = createConfig({
-    chains: [sepolia],
-    transports: {
-      [sepolia.id]: http(),
-    },
-  })
-
+  // const config = createConfig({
+  //   chains: [sepolia],
+  //   transports: {
+  //     [sepolia.id]: http(),
+  //   },
+  // });
 
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <Component {...pageProps} />
+        <RainbowKitProvider>
+          <Component {...pageProps} />
+        </RainbowKitProvider>
         <Toaster />
       </QueryClientProvider>
     </WagmiProvider>
