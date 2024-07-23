@@ -20,6 +20,7 @@ export default async function handler(
         prompt: prompt,
         n: 1,
         size: "1024x1024",
+        response_format:'b64_json'
       });
       if (response?.data) {
         return res.status(200).json({ imageData: response?.data });
