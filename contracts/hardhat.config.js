@@ -7,8 +7,8 @@ const PRIVATE_KEY = process.env.WALLET_KEY;
 module.exports = {
   solidity: "0.8.24",
   networks: {
-    amoy: {
-      url: `https://polygon-amoy.g.alchemy.com/v2/${API_KEY}`,
+    zkEVM: {
+      url: `https://polygonzkevm-cardona.g.alchemy.com/v2/${API_KEY}`,
       accounts: [PRIVATE_KEY],
     },
   },
