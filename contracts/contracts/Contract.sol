@@ -12,7 +12,7 @@ contract GenesisGalleria is ERC721URIStorage, Ownable() {
     Counters.Counter private _tokenIds;
     address _owner;
 
-    uint256 public mintingFee = 0.01 ether;
+    uint256 public mintingFee = 0.0001 ether;
 
     constructor() ERC721("GenesisGalleria", "GG"){
         _owner=msg.sender;
