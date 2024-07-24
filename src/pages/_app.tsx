@@ -15,7 +15,7 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { AppProps } from "next/app";
 import { WagmiProvider } from "wagmi";
-import { arbitrum, base, mainnet, optimism, polygon } from "wagmi/chains";
+import { polygonZkEvmTestnet, polygon,polygonZkEvmCardona } from "wagmi/chains";
 
 import { Toaster } from "@/components/ui/sonner";
 import { createConfig, http } from "wagmi";
@@ -32,7 +32,7 @@ export default function App({ Component, pageProps }: AppProps) {
   const config = getDefaultConfig({
     appName: "Genesis Galleria",
     projectId: "MY_PROJECT_ID",
-    chains: [polygon, sepolia],
+    chains: [polygon, sepolia,polygonZkEvmTestnet,polygonZkEvmCardona],
     ssr: true, // If your dApp uses server side rendering (SSR)
   });
 

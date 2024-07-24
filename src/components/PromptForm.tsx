@@ -211,7 +211,7 @@ const handleSubmit = async (e: any) => {
                             generatedImageUrl && uploadByURL(generatedImageUrl);
                             await writeContractAsync({ 
                               abi:genesisAbi,
-                              address: '0x32de4FB7A0a736a8a319EF5f93B97B098b14202F',
+                              address: '0xb9F0f38e8987703648A9Fb185384300598d04327',
                               functionName: 'mint',
                               args: [
                                 uri
