@@ -1,4 +1,4 @@
-import { useDynamicContext, useIsLoggedIn } from "@dynamic-labs/sdk-react-core";
+
 import { useAccount } from "@starknet-react/core";
 import axios from "axios";
 import { Lightbulb, Loader } from "lucide-react";
@@ -6,9 +6,6 @@ import { Recursive } from "next/font/google";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-
-import { getAllGenesis, getGenesis } from "../blockchain/scripts/history";
-import useMintNft from "../blockchain/scripts/mintnft";
 import {
   Dialog,
   DialogContent,
@@ -20,6 +17,8 @@ import { getRandomPrompt } from "../utils/index";
 import { Button } from "./ui/button";
 
 const font = Recursive({ subsets: ["latin"] });
+import { useWriteContract } from 'wagmi'
+import genesisAbi from '../blockchain/abis/genesis.json'
 
 export default function PromptForm({}: any) {
   const [prompt, setPrompt] = useState("");
@@ -29,41 +28,52 @@ export default function PromptForm({}: any) {
   const [isMinting, setIsMinting] = useState(false);
   const [generatedImageUrl, setGeneratedImageUrl] = useState(
     ""
-    // "https://shorturl.at/Dvlqm"
-    // "https://oaidalleapiprodscus.blob.core.windows.net/private/org-CF0C6y3lv4lQ8ilB5bQ9SAna/user-C41QIYbDmRAXSSXjMq9xyjUJ/img-qqwIlXOGlShZxcNIYu5Xre4q.png?st=2024-06-23T08%3A24%3A35Z&se=2024-06-23T10%3A24%3A35Z&sp=r&sv=2023-11-03&sr=b&rscd=inline&rsct=image/png&skoid=6aaadede-4fb3-4698-a8f6-684d7786b067&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2024-06-22T13%3A51%3A55Z&ske=2024-06-23T13%3A51%3A55Z&sks=b&skv=2023-11-03&sig=RClvaHxS8DuAmQFCGOKQL5fGsuF%2BmH0Agh3oo3eEnfQ%3D"
-    // "https://oaidalleapiprodscus.blob.core.windows.net/private/org-CF0C6y3lv4lQ8ilB5bQ9SAna/user-C41QIYbDmRAXSSXjMq9xyjUJ/img-tJPa6t6Cbp4N5cADLqbYeGI3.png?st=2024-06-23T02%3A55%3A38Z&se=2024-06-23T04%3A55%3A38Z&sp=r&sv=2023-11-03&sr=b&rscd=inline&rsct=image/png&skoid=6aaadede-4fb3-4698-a8f6-684d7786b067&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2024-06-22T14%3A08%3A33Z&ske=2024-06-23T14%3A08%3A33Z&sks=b&skv=2023-11-03&sig=3dxSdAs6Ow1YjDQkf2YSZfSuDYwJRHNmSTPD5esnoEM%3D"
   );
-  const {
-    uri,
-    seturi,
-    dataMint,
-    errorMint,
-    resetMint,
-    writeAsyncMint,
-    writeMint,
-    isErrorMint,
-    isIdleMint,
-    isSuccessMint,
-    statusMint,
-  } = useMintNft();
-  const { primaryWallet } = useDynamicContext();
-  const { status } = useAccount();
+  const [genratedB64, setgenratedB64] = useState("")
+  const [uri, seturi] = useState("")
+  
+  const { writeContract,writeContractAsync,status } = useWriteContract()
 
   const JWT = process.env.NEXT_PUBLIC_PINATA_JWT!;
 
   const handleMint = async () => {
     try {
-      const data = await getGenesis();
+      // const data = await getGenesis();
     } catch (err) {
       console.log(err, "err in trnasaction");
     }
   };
+  function base64ToBlob(base64String:any) {
+    // Remove the base64 prefix
+    const base64Data = base64String.split(',')[1];
+    
+    // Decode the base64 string to a binary string
+    const byteCharacters = atob(base64Data);
+    
+    // Create an array to hold the bytes
+    const byteNumbers = new Array(byteCharacters.length);
+    
+    for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    
+    // Convert byte array to a Blob
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: 'image/png' });
+    const imageUrl = URL.createObjectURL(blob);
+    setGeneratedImageUrl(imageUrl)
+    
+    // Create a URL for the Blob
+    return blob
 
-  const handleSubmit = async (e: any) => {
+}
+const filePath = 'path/to/file.png';
+const fileName = 'image.png';
+const handleSubmit = async (e: any) => {
     e.preventDefault();
 
-    if (status !== "connected")
-      return toast.error("Please connect your wallet first");
+    // if (status !== "connected")
+    //   return toast.error("Please connect your wallet first");
 
     if (!prompt)
       return toast.error("Please enter a prompt or get surprised : )");
@@ -73,9 +83,10 @@ export default function PromptForm({}: any) {
 
     try {
       const response = await axios.post("/api/openai", { prompt });
-
       if (response?.status === 200) {
-        setGeneratedImageUrl(response?.data?.imageData[0]?.url);
+        setgenratedB64(response?.data?.imageData[0]?.b64_json)
+        base64ToBlob('data:image/png;base64,'+response?.data?.imageData[0]?.b64_json)
+        // setGeneratedImageUrl(response?.data?.b64_json);
         setIsGenerating(false);
         toast.success("Image generated successfully");
       } else {
@@ -100,15 +111,16 @@ export default function PromptForm({}: any) {
     try {
       setIsMinting(true);
 
-      const blob = new Blob([url], {
-        type: "text/plain",
-      });
+      const blob = base64ToBlob('data:image/png;base64,'+genratedB64)
 
-      const file = new File([blob], "file");
+      const file = new File([blob], "file",{type:blob.type});
 
       const data = new FormData();
       data.append("file", file);
-
+      const pinataMetadata = JSON.stringify({
+        name: fileName,
+    });
+    data.append('pinataMetadata', pinataMetadata);
       const upload = await fetch(
         "https://api.pinata.cloud/pinning/pinFileToIPFS",
         {
@@ -124,7 +136,7 @@ export default function PromptForm({}: any) {
       const uploadRes = await upload.json();
       if (uploadRes?.IpfsHash) {
         setIpfsHash(uploadRes?.IpfsHash);
-        seturi(uploadRes?.IpfsHash);
+        seturi('https://gateway.pinata.cloud/ipfs/'+uploadRes?.IpfsHash);
         handleMint();
       }
       setIsMinting(false);
@@ -134,12 +146,6 @@ export default function PromptForm({}: any) {
     }
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const res = await getAllGenesis();
-    };
-    fetchData();
-  }, []);
 
   return (
     <form onSubmit={handleSubmit} className="animate-in fade-in duration-700">
@@ -191,7 +197,7 @@ export default function PromptForm({}: any) {
                           variant="ghost"
                           onClick={() => {
                             // setIsModalOpen(false)
-                            handleMint();
+                            // handleMint();
                           }}
                           className={cn("w-full", {
                             "opacity-50 cursor-not-allowed": isMinting,
@@ -203,6 +209,14 @@ export default function PromptForm({}: any) {
                         <Button
                           onClick={async () => {
                             generatedImageUrl && uploadByURL(generatedImageUrl);
+                            await writeContractAsync({ 
+                              abi:genesisAbi,
+                              address: '0x32de4FB7A0a736a8a319EF5f93B97B098b14202F',
+                              functionName: 'mint',
+                              args: [
+                                uri
+                              ],
+                           })
                           }}
                           className={cn(
                             "w-full bg-gradient-to-tr from-[#e79de7] to-[#f28df2] text-black hover:to-[#ee77ee]",
@@ -271,8 +285,9 @@ export default function PromptForm({}: any) {
       <div className="mb-2 mt-1 flex sm:justify-center">
         <div
           className="relative flex gap-2 overflow-hidden mt-2 rounded-full py-1.5 px-4 text-sm leading-6 border-1 border-gray-300 bg-gradient-to-r from-gray-50 to-gray-100 bg-opacity-50 ring-1 focus:border-none focus:ring-gray-900/20 focus:outline-none ring-gray-900/10 hover:ring-[#f1b7f1] cursor-pointer mx-auto select-none"
-          onClick={() => {
+          onClick={async() => {
             handleSupriseMe();
+            // uploadByURL('hell')
           }}
         >
           <Lightbulb className="sm:h-5 h-3 sm:w-5 w-3" />

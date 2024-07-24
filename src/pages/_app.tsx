@@ -1,20 +1,25 @@
 import "@/styles/globals.css";
-import { DynamicContextProvider } from "@dynamic-labs/sdk-react-core";
-import { StarknetWalletConnectors } from "@dynamic-labs/starknet";
-import { sepolia } from "@starknet-react/chains";
+
+import { getDefaultConfig, RainbowKitProvider } from "@rainbow-me/rainbowkit";
+import "@rainbow-me/rainbowkit/styles.css";
 import {
-  StarknetConfig,
   alchemyProvider,
   argent,
   braavos,
   infuraProvider,
   publicProvider,
+  StarknetConfig,
   useInjectedConnectors,
   useProvider,
 } from "@starknet-react/core";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { AppProps } from "next/app";
+import { WagmiProvider } from "wagmi";
+import { arbitrum, base, mainnet, optimism, polygon } from "wagmi/chains";
 
 import { Toaster } from "@/components/ui/sonner";
+import { createConfig, http } from "wagmi";
+import { sepolia } from "wagmi/chains";
 
 export default function App({ Component, pageProps }: AppProps) {
   const cssOverrides = `
@@ -24,6 +29,15 @@ export default function App({ Component, pageProps }: AppProps) {
     }
 `;
 
+  const config = getDefaultConfig({
+    appName: "Genesis Galleria",
+    projectId: "MY_PROJECT_ID",
+    chains: [polygon, sepolia],
+    ssr: true, // If your dApp uses server side rendering (SSR)
+  });
+
+  const queryClient = new QueryClient();
+
   const provider = publicProvider();
   const { connectors } = useInjectedConnectors({
     recommended: [argent(), braavos()],
@@ -31,23 +45,21 @@ export default function App({ Component, pageProps }: AppProps) {
     order: "random",
   });
 
+  // const config = createConfig({
+  //   chains: [sepolia],
+  //   transports: {
+  //     [sepolia.id]: http(),
+  //   },
+  // });
+
   return (
-    <DynamicContextProvider
-      settings={{
-        environmentId: process.env.NEXT_PUBLIC_ENVIRONMENT_ID!,
-        walletConnectors: [StarknetWalletConnectors],
-        cssOverrides: cssOverrides,
-        enableConnectOnlyFallback: true,
-      }}
-    >
-      <StarknetConfig
-        chains={[sepolia]}
-        provider={provider}
-        connectors={connectors}
-      >
-        <Component {...pageProps} />
+    <WagmiProvider config={config}>
+      <QueryClientProvider client={queryClient}>
+        <RainbowKitProvider>
+          <Component {...pageProps} />
+        </RainbowKitProvider>
         <Toaster />
-      </StarknetConfig>
-    </DynamicContextProvider>
+      </QueryClientProvider>
+    </WagmiProvider>
   );
 }
